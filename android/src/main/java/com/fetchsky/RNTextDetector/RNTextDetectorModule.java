@@ -1,8 +1,10 @@
 
 package com.fetchsky.RNTextDetector;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Rect;
-import android.support.annotation.NonNull;
+import android.util.Base64;
 
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.Promise;
@@ -23,25 +25,25 @@ import java.io.IOException;
 
 public class RNTextDetectorModule extends ReactContextBaseJavaModule {
 
-  private final ReactApplicationContext reactContext;
-  private FirebaseVisionTextRecognizer detector;
-  private FirebaseVisionImage image;
+    private final ReactApplicationContext reactContext;
+    private FirebaseVisionTextRecognizer detector;
+    private FirebaseVisionImage image;
 
-  public RNTextDetectorModule(ReactApplicationContext reactContext) {
-    super(reactContext);
-    this.reactContext = reactContext;
-    try {
-        detector = FirebaseVision.getInstance().getOnDeviceTextRecognizer();
-    }
-    catch (IllegalStateException e) {
-        e.printStackTrace();
-    }
-  }
-
-  @ReactMethod
-    public void detectFromUri(String uri, final Promise promise) {
+    public RNTextDetectorModule(ReactApplicationContext reactContext) {
+        super(reactContext);
+        this.reactContext = reactContext;
         try {
-            image = FirebaseVisionImage.fromFilePath(this.reactContext, android.net.Uri.parse(uri));
+            detector = FirebaseVision.getInstance().getOnDeviceTextRecognizer();
+        } catch (IllegalStateException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @ReactMethod
+    public void detect(String base64, final Promise promise) {
+        try {
+            Bitmap img = getBitmap(base64);
+            image = FirebaseVisionImage.fromBitmap(img);
             Task<FirebaseVisionText> result =
                     detector.processImage(image)
                             .addOnSuccessListener(new OnSuccessListener<FirebaseVisionText>() {
@@ -53,15 +55,21 @@ public class RNTextDetectorModule extends ReactContextBaseJavaModule {
                             .addOnFailureListener(
                                     new OnFailureListener() {
                                         @Override
-                                        public void onFailure(@NonNull Exception e) {
+                                        public void onFailure(Exception e) {
                                             e.printStackTrace();
                                             promise.reject(e);
                                         }
-                                    });;
-        } catch (IOException e) {
+                                    });
+            ;
+        } catch (Exception e) {
             promise.reject(e);
             e.printStackTrace();
         }
+    }
+
+    private Bitmap getBitmap(String base64) {
+        byte[] decodedString = Base64.decode(base64, Base64.DEFAULT);
+        return BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
     }
 
     /**
@@ -75,7 +83,7 @@ public class RNTextDetectorModule extends ReactContextBaseJavaModule {
         WritableMap info = Arguments.createMap();
         WritableMap coordinates = Arguments.createMap();
 
-        for (FirebaseVisionText.TextBlock block: firebaseVisionText.getTextBlocks()) {
+        for (FirebaseVisionText.TextBlock block : firebaseVisionText.getTextBlocks()) {
             info = Arguments.createMap();
             coordinates = Arguments.createMap();
 
@@ -95,8 +103,8 @@ public class RNTextDetectorModule extends ReactContextBaseJavaModule {
     }
 
 
-  @Override
-  public String getName() {
-    return "RNTextDetector";
-  }
+    @Override
+    public String getName() {
+        return "RNTextDetector";
+    }
 }

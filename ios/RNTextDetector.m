@@ -5,6 +5,7 @@
 
 #import <CoreML/CoreML.h>
 #import <Vision/Vision.h>
+
 #import <TesseractOCR/TesseractOCR.h>
 
 @implementation RNTextDetector
@@ -18,8 +19,8 @@ RCT_EXPORT_MODULE()
 
 static NSString *const detectionNoResultsMessage = @"Something went wrong";
 
-RCT_REMAP_METHOD(detectFromUri, detectFromUri:(NSString *)imagePath resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject) {
-    if (!imagePath) {
+RCT_REMAP_METHOD(detect, plate: (NSString *)plate resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject) {
+    if (!plate) {
         resolve(@NO);
         return;
     }
@@ -27,8 +28,8 @@ RCT_REMAP_METHOD(detectFromUri, detectFromUri:(NSString *)imagePath resolver:(RC
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         VNDetectTextRectanglesRequest *textReq = [VNDetectTextRectanglesRequest new];
         NSDictionary *d = [[NSDictionary alloc] init];
-        NSData *imageData = [NSData dataWithContentsOfURL:[NSURL URLWithString:imagePath]];
-        UIImage *image = [UIImage imageWithData:imageData];
+        UIImage* image = [self decodeBase64ToImage: plate];
+        NSData *imageData = UIImagePNGRepresentation(image);
         
         if (!image) {
             dispatch_async(dispatch_get_main_queue(), ^{
@@ -90,4 +91,11 @@ RCT_REMAP_METHOD(detectFromUri, detectFromUri:(NSString *)imagePath resolver:(RC
     
 }
 
+- (UIImage *)decodeBase64ToImage:(NSString *)strEncodeData {
+  NSData *data = [[NSData alloc]initWithBase64EncodedString:strEncodeData options:NSDataBase64DecodingIgnoreUnknownCharacters];
+    return [UIImage imageWithData:data];
+}
+- (NSString *)encodeToBase64String:(UIImage *)image {
+ return [UIImagePNGRepresentation(image) base64EncodedStringWithOptions:NSDataBase64Encoding64CharacterLineLength];
+}
 @end
