@@ -96,6 +96,7 @@ public class RNTextDetectorModule extends ReactContextBaseJavaModule {
 
             info.putMap("bounding", coordinates);
             info.putString("text", block.getText());
+            info.putDouble("confidence", block.getConfidence());
             data.pushMap(info);
         }
 
